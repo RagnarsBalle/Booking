@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace Booking.BookingDbContext
 {
     public class BookingDbContext : DbContext
     {
-        public BookingDbContext(DbContextOptions<YourDbContext> options) : base(options) { }
+        public BookingDbContext(DbContextOptions<BookingDbContext> options) : base(options) { }
 
-        public DbSet<YourEntity> YourEntities { get; set; }
+        public DbSet<BookingDbContext> YourEntities { get; set; }
     }
 }
