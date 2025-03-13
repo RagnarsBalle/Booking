@@ -4,7 +4,7 @@
     using System.ComponentModel.DataAnnotations;
     public class BookingModel
     {
-        public int BookningID { get; set; }
+        public int BookingID { get; set; }
         public int GuestID { get; set; }
         public string RoomID { get; set; }
         public DateTime StartDate { get; set; }

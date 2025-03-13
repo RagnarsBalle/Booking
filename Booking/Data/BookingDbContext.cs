@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
+using Booking.Models; // 🔥 Importera din BookingModel
 
 namespace Booking.Data
 {
@@ -7,6 +7,21 @@ namespace Booking.Data
     {
         public BookingDbContext(DbContextOptions<BookingDbContext> options) : base(options) { }
 
-        public DbSet<BookingDbContext> YourEntities { get; set; }
+        // 🔥 Lägg till endast de entiteter du har
+        public DbSet<BookingModel> Bookings { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Konfigurera primärnyckel
+            modelBuilder.Entity<BookingModel>()
+                .HasKey(b => b.BookingID); // Primärnyckel för BookingModel
+
+            // Om du vill lägga till relationer, lägg till dem här
+            modelBuilder.Entity<BookingModel>()
+                .Property(b => b.TotalSum)
+                .HasColumnType("decimal(18,2)"); // Rätt format i databasen
+        }
     }
 }

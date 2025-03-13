@@ -1,6 +1,6 @@
 ﻿using Booking.Models;
 using Microsoft.EntityFrameworkCore;
-using Room.Models;
+using Booking.Models;
 using System.Collections.Generic;
 
 namespace Room.Data

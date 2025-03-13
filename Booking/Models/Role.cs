@@ -1,8 +1,13 @@
-﻿namespace Room.Models // Se till att namespace matchar ditt projekt
+﻿using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
+
+public class Role
 {
-    public class Role
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [Required, MaxLength(50)]
+    public string Name { get; set; }
+
+    public List<User> Users { get; set; } = new List<User>();
 }
