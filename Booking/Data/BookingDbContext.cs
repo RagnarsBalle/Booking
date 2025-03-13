@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 
-namespace Booking.BookingDbContext
+namespace Booking.Data
 {
     public class BookingDbContext : DbContext
     {
