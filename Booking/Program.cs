@@ -1,59 +1,54 @@
-using Microsoft.EntityFrameworkCore;
-using Booking.Data; // Importera rätt namespace
-using Microsoft.Extensions.Configuration;
+ï»¿using Microsoft.EntityFrameworkCore;
+using Booking.Data; // SÃ¤kerstÃ¤ll att detta Ã¤r korrekt namespace
 using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Explicit sökväg till appsettings.json
-var configPath = @"C:\Users\phosf\OneDrive - Högskolan Väst\Documents\sysArkt_SOS100\SOAgrpAPI\Booking\Booking\appsettings.json";
+// LÃ¤s konfiguration (appsettings.json) relativt projektmappen
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-// Kontrollera om filen finns
-if (!File.Exists(configPath))
-{
-    throw new FileNotFoundException($"Konfigurationsfilen saknas: {configPath}");
-}
-
-// Läs in konfigurationen
-builder.Configuration.SetBasePath(Path.GetDirectoryName(configPath) ?? Directory.GetCurrentDirectory());
-builder.Configuration.AddJsonFile(Path.GetFileName(configPath), optional: false, reloadOnChange: true);
-
-// Lägg till tjänster i DI-containern
+// LÃ¤gg till tjÃ¤nster i Dependency Injection
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Lägg till RoomDbContext med explicit anslutningssträng
+// Databaskonfiguration frÃ¥n appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {
-    throw new InvalidOperationException("Anslutningssträngen 'DefaultConnection' saknas i appsettings.json.");
+    throw new InvalidOperationException("AnslutningsstrÃ¤ngen 'DefaultConnection' saknas i appsettings.json.");
 }
 
 builder.Services.AddDbContext<BookingDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-/* 
-// Lägg till ApplicationDbContext (SÄKERHETSDATABAS) när den andra gruppen har lagt upp sin server.
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SecurityDatabase")));
-*/
+// LÃ¤gg till HttpClient fÃ¶r kommunikation med RoomAPI
+builder.Services.AddHttpClient("RoomAPI", client =>
+{
+    // Ã„NDRA vid behov (URL dÃ¤r RoomAPI kÃ¶rs)
+    client.BaseAddress = new Uri("https://localhost:7186/");
+});
 
+// Bygg applikationen
 var app = builder.Build();
 
-// Konfigurera Swagger UI
+// Swagger-konfiguration (bara vid utveckling)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", " API v1");
-        c.RoutePrefix = string.Empty; // Swagger visas direkt på roten
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Booking API v1");
+        c.RoutePrefix = string.Empty; // Swagger visas pÃ¥ startsidan
     });
 }
 
+// Middleware pipeline
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
 app.Run();

@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Booking.Models; // 🔥 Importera din BookingModel
+using Booking.Models;
 
 namespace Booking.Data
 {
@@ -7,7 +7,7 @@ namespace Booking.Data
     {
         public BookingDbContext(DbContextOptions<BookingDbContext> options) : base(options) { }
 
-        // 🔥 Lägg till endast de entiteter du har
+        // Lägg till endast de entiteter du har
         public DbSet<BookingModel> Bookings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
