@@ -2,7 +2,8 @@
 using Booking.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Booking.DTOs; // OBS! RoomModel bör importeras från Room-projektet
+using Booking.DTOs;
+using System.Net.Http.Json;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -17,58 +18,117 @@ public class BookingController : ControllerBase
         _roomApiClient = httpClientFactory.CreateClient("RoomAPI");
     }
 
-    // GET-testmetod
-    [HttpGet("test")]
-    public async Task<ActionResult<IEnumerable<string>>> GetTestBookings()
-    {
-        return Ok(new List<string> { "Test Booking 1", "Test Booking 2" });
-    }
-
-    // GET: api/Booking
+    // GET: /api/booking
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BookingModel>>> GetBookings()
+    public async Task<ActionResult<IEnumerable<BookingModel>>> Get()
     {
-        return await _context.Bookings.ToListAsync();
+        var bookings = await _context.Bookings.ToListAsync();
+        return Ok(bookings);
     }
 
-    // GET: api/Booking/{id}
+    // GET: /api/booking/{id}
     [HttpGet("{id}")]
     public async Task<ActionResult<BookingModel>> GetBooking(int id)
     {
-        var booking = await _context.Bookings
-            .FirstOrDefaultAsync(b => b.BookingID == id);
-
+        var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.BookingID == id);
         if (booking == null)
-            return NotFound();
+            return NotFound("Bokningen hittades inte.");
 
-        return booking;
+        return Ok(booking);
     }
 
-    // POST: api/Booking
+    // POST: /api/booking
     [HttpPost]
-    public async Task<ActionResult<BookingModel>> CreateBooking([FromBody] BookingModel booking)
+    public async Task<ActionResult<BookingModel>> CreateBooking([FromBody] BookingDto bookingDto)
     {
-        // Anropa RoomAPI via HttpClient
-        var response = await _roomApiClient.GetAsync($"/api/room/{booking.RoomID}");
+        if (bookingDto == null)
+        {
+            Console.WriteLine("JSON-data är NULL! API:t kunde inte tolka den.");
+            return BadRequest("Bokningsdata kan inte vara null.");
+        }
+
+        Console.WriteLine("JSON-data mottagen!");
+        Console.WriteLine($"CustomerName: {bookingDto.CustomerName}");
+        Console.WriteLine($"GuestID: {bookingDto.GuestID}");
+        Console.WriteLine($"RoomID: {bookingDto.RoomID}");
+        Console.WriteLine($"StartDate: {bookingDto.StartDate}");
+        Console.WriteLine($"EndDate: {bookingDto.EndDate}");
+        Console.WriteLine($"Adults: {bookingDto.Adults}");
+        Console.WriteLine($"Children: {bookingDto.Children}");
+        Console.WriteLine($"TotalSum: {bookingDto.TotalSum}");
+
+        // 🟢 Skapa en ny bokning baserad på inkommande data
+        var newBooking = new BookingModel
+        {
+            CustomerName = bookingDto.CustomerName,
+            GuestID = bookingDto.GuestID,
+            RoomID = bookingDto.RoomID,
+            StartDate = bookingDto.StartDate,
+            EndDate = bookingDto.EndDate,
+            Adults = bookingDto.Adults,
+            Children = bookingDto.Children,
+            TotalSum = bookingDto.TotalSum
+        };
+
+        // 🟢 Lägg till i databaskontexten
+        _context.Bookings.Add(newBooking);
+
+        // 🟢 Spara ändringarna i databasen
+        var result = await _context.SaveChangesAsync();
+        Console.WriteLine($"Antal rader sparade i databasen: {result}");
+
+        if (result > 0)
+        {
+            return CreatedAtAction(nameof(GetBooking), new { id = newBooking.BookingID }, newBooking);
+        }
+        else
+        {
+            return BadRequest("Bokningen kunde inte sparas.");
+        }
+    }
 
 
-        if (!response.IsSuccessStatusCode)
-            return BadRequest("Rummet hittades ej i Room-API.");
 
-        // Konvertera svaret (JSON) till din lokala RoomDto
-        var room = await response.Content.ReadFromJsonAsync<RoomDto>();
+    // PUT: /api/booking/{id}
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateBooking(int id, [FromBody] BookingDto bookingDto)
+    {
+        if (bookingDto == null)
+            return BadRequest("Bokningsdata kan inte vara null.");
 
-        if (room == null)
-            return BadRequest("Rum existerar inte enligt Room-API.");
+        var existingBooking = await _context.Bookings.FirstOrDefaultAsync(b => b.BookingID == id);
+        if (existingBooking == null)
+            return NotFound("Bokningen hittades inte.");
 
-        if (!room.IsVacant)
-            return BadRequest("Rum är upptaget enligt Room-API.");
+        existingBooking.GuestID = bookingDto.GuestID;
+        existingBooking.RoomID = bookingDto.RoomID;
+        existingBooking.StartDate = bookingDto.StartDate;
+        existingBooking.EndDate = bookingDto.EndDate;
+        existingBooking.Adults = bookingDto.Adults;
+        existingBooking.Children = bookingDto.Children;
+        existingBooking.TotalSum = bookingDto.TotalSum;
 
-        // Lägg till extra affärslogik om du behöver (pris, datumvalidering osv.)
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(existingBooking);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Ett fel uppstod: {ex.Message}");
+        }
+    }
 
-        _context.Bookings.Add(booking);
+    // DELETE: /api/booking/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteBooking(int id)
+    {
+        var existingBooking = await _context.Bookings.FirstOrDefaultAsync(b => b.BookingID == id);
+        if (existingBooking == null)
+            return NotFound("Bokningen hittades inte.");
+
+        _context.Bookings.Remove(existingBooking);
         await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetBooking), new { id = booking.BookingID }, booking);
+        return NoContent();
     }
 }

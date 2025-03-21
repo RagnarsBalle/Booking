@@ -1,24 +1,15 @@
-﻿namespace Booking.Models;
+﻿namespace Booking.DTOs;
 
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System;
 
-public class BookingModel
+public class BookingDto
 {
-    [Key]
-    public int BookingID { get; set; }
     public string CustomerName { get; set; }
-
     public int GuestID { get; set; }
     public int RoomID { get; set; }
-
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-
     public int Adults { get; set; }
     public int Children { get; set; }
-
-    [Column(TypeName = "decimal(18,2)")]
     public decimal TotalSum { get; set; }
-
 }
